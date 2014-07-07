@@ -1,5 +1,4 @@
-
-
+// Wiki model
 var wiki = {};
 
 wiki.Wiki = function(data) {
@@ -10,6 +9,8 @@ wiki.Wiki = function(data) {
 
 wiki.WikiList = Array;
 
+
+// Wiki controller
 wiki.controller = function() {
 
     var self = this;
@@ -52,7 +53,8 @@ wiki.controller = function() {
     };
 
     self.save = function() {
-        m.request({method: "PUT", url: "/list", data: self.list});
+//        m.request({method: "PUT", url: "/list", data: self.list}); // Using API route
+        sock.send(JSON.stringify(self.list)); // Using sockets
     };
 
     self.delete = function(index) {
@@ -70,25 +72,58 @@ wiki.controller = function() {
         self.message("");
     };
 
-    // Load Data
-    var loaded = m.prop([]);
-    m.request({method: "GET", url: "/list"}).then(loaded).then(function(wikis) {
-        console.log(wikis);
-        for (var i in wikis){
-            var wikiJSON = wikis[i];
-            var loadedWiki = new wiki.Wiki({title: wikiJSON.title, description: wikiJSON.description});
-            loadedWiki.new(false);
-            self.list.push(loadedWiki);
-        }
-    }, function() {self.message("Error: Studies could not be loaded.")}).then(function() {
+
+    self.initialize = function () {
         if (self.list.length > 0) {
             self.selectWiki(self.list[0]);
         } else {
             self.newWiki();
         }
-    });
+    };
 
+    // Socket Business
+    var sock = new SockJS('http://localhost:8080/sock');
+    sock.onopen = function() {
+        console.log('open');
+    };
+    sock.onmessage = function(e) {
+        console.log('Message occurred: ', e);
+        self.list = new wiki.WikiList;
+        var wikis = JSON.parse(e.data);
+        for (var i in wikis){
+            var wikiJSON = wikis[i];
+            console.log(wikiJSON);
+            var loadedWiki = new wiki.Wiki({title: wikiJSON.title, description: wikiJSON.description});
+            loadedWiki.new(false);
+            self.list.push(loadedWiki);
+        }
+        self.initialize();
+        m.redraw();
+    };
+    sock.onclose = function() {
+        console.log('close');
+    };
 
+    // Data retrieval through API endpoints
+//    m.request({method: "GET", url: "/list"}).then(function(wikis) {
+//        console.log('SUCCESS');
+//        console.log(wikis);
+//        for (var i in wikis){
+//            console.log(wikis[i]);
+//            var wikiJSON = wikis[i];
+//            var loadedWiki = new wiki.Wiki({title: wikiJSON.title, description: wikiJSON.description});
+//            loadedWiki.new(false);
+//            self.list.push(loadedWiki);
+//        }
+//    }, function() {self.message("Error: Studies could not be loaded.")}).then(function() {
+//        if (self.list.length > 0) {
+//            self.selectWiki(self.list[0]);
+//        } else {
+//            self.newWiki();
+//        }
+//    });
+
+    self.initialize();
 
 };
 
@@ -183,4 +218,3 @@ m.route(document.body, "/", {
     "/about": about
 });
 
-//m.route();
