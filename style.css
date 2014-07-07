@@ -1,0 +1,9 @@
+.text-danger {
+    color: #dd0000;
+}
+
+button {
+    font-family: 'Inika', Helvetica;
+    font-size: 14px;
+    margin-top: 10px;
+}
